@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WIS 明星合作推荐系统</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #fff; color: #333; line-height: 1.6; }
+.container { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+.header { text-align: center; padding: 40px 0 32px; border-bottom: 1px solid #eee; }
+.header h1 { font-size: 24px; font-weight: 600; color: #1a1a1a; letter-spacing: 1px; }
+.header .subtitle { font-size: 13px; color: #999; margin-top: 4px; }
+.header .badge { display: inline-block; margin-top: 8px; background: #D4A853; color: #fff; font-size: 11px; padding: 2px 10px; border-radius: 10px; font-weight: 500; }
+.search-wrap { margin-top: 24px; position: relative; max-width: 560px; margin-left: auto; margin-right: auto; }
+.search-row { display: flex; gap: 8px; }
+.search-row input { flex: 1; padding: 12px 16px 12px 42px; border: 1px solid #ddd; border-radius: 10px; font-size: 14px; outline: none; transition: border .2s; background: #f8f9fa; }
+.search-row input:focus { border-color: #D4A853; background: #fff; }
+.search-icon { position: absolute; left: 14px; top: 14px; color: #aaa; font-size: 18px; pointer-events: none; }
+.search-row .ask-btn { padding: 12px 20px; background: #D4A853; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; transition: background .2s; }
+.search-row .ask-btn:hover { background: #c49a3f; }
+.search-history { max-width: 560px; margin: 8px auto 0; display: none; }
+.search-history .h-title { font-size: 11px; color: #bbb; margin-bottom: 4px; }
+.search-history .h-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.history-tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #f0f0f0; color: #666; cursor: pointer; border: 1px solid #eee; transition: all .2s; }
+.history-tag:hover { background: #D4A853; color: #fff; border-color: #D4A853; }
+.history-tag .close { margin-left: 4px; font-size: 10px; color: #ccc; }
+.section-title { display: flex; align-items: center; gap: 8px; margin: 32px 0 16px; font-size: 16px; font-weight: 600; color: #1a1a1a; }
+.section-title .dot { width: 4px; height: 18px; background: #D4A853; border-radius: 2px; }
+.tabs { display: flex; gap: 0; border: 1px solid #eee; border-radius: 8px; overflow: hidden; margin-bottom: 16px; }
+.tab-btn { flex: 1; padding: 10px 0; text-align: center; font-size: 13px; cursor: pointer; border: none; background: #f8f9fa; color: #666; transition: all .2s; }
+.tab-btn.active { background: #fff; color: #D4A853; font-weight: 600; box-shadow: inset 0 -2px 0 #D4A853; }
+.tab-btn:hover:not(.active) { background: #f0f0f0; }
+.hot-list { display: flex; flex-direction: column; gap: 6px; }
+.hot-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #f8f9fa; border-radius: 8px; font-size: 13px; }
+.hot-item .rank { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.hot-item .rank.r1 { background: #e74c3c; }
+.hot-item .rank.r2 { background: #e67e22; }
+.hot-item .rank.r3 { background: #f39c12; }
+.hot-item .rank.rn { background: #bbb; }
+.hot-item .text { flex: 1; }
+.hot-item .heat { font-size: 11px; color: #999; flex-shrink: 0; }
+.card { background: #f8f9fa; border-radius: 12px; padding: 20px; margin-bottom: 12px; border: 1px solid #eee; }
+.card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.card-avatar { width: 48px; height: 48px; border-radius: 50%; background: #D4A853; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 18px; flex-shrink: 0; }
+.card-name { font-size: 16px; font-weight: 600; }
+.card-stars { color: #D4A853; font-size: 14px; }
+.card-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.tag { font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #e8f4e8; color: #2d7d2d; }
+.tag.warn { background: #fff3e0; color: #e65100; }
+.tag.info { background: #e3f2fd; color: #1565c0; }
+.tag.bad { background: #ffebee; color: #c62828; }
+.card-body { font-size: 13px; color: #555; line-height: 1.7; }
+.card-body .row { display: flex; gap: 12px; margin-bottom: 4px; }
+.card-body .label { color: #999; width: 70px; flex-shrink: 0; }
+.card-body .reason { background: #fff; border-radius: 8px; padding: 12px; margin-top: 8px; font-size: 13px; color: #444; border: 1px solid #eee; }
+.search-result { display: none; margin-top: 16px; }
+.search-result.show { display: block; }
+.status-bar { display: none; text-align: center; padding: 14px; background: #fef9ef; border: 1px solid #f0dba8; border-radius: 10px; margin-top: 12px; font-size: 13px; color: #8b6914; }
+.no-result { text-align: center; padding: 40px 0; color: #999; font-size: 14px; }
+.no-result .big-icon { font-size: 48px; margin-bottom: 12px; }
+.no-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.no-item { background: #fff5f5; color: #c62828; font-size: 12px; padding: 4px 12px; border-radius: 6px; border: 1px solid #ffcdd2; }
+.footer { text-align: center; padding: 32px 0; color: #ccc; font-size: 12px; }
+@media (max-width: 600px) {
+  .container { padding: 16px 12px; }
+  .header { padding: 24px 0; }
+  .header h1 { font-size: 20px; }
+  .card-header { flex-wrap: wrap; }
+  .hot-item { font-size: 12px; padding: 6px 10px; }
+  .search-row { flex-direction: column; }
+  .search-row .ask-btn { width: 100%; text-align: center; }
+}
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <div class="header">
+    <h1>WIS 明星合作推荐系统</h1>
+    <div class="subtitle">基于历史成交数据 × 平台热点 × 受众匹配度</div>
+    <div class="badge">本周更新 · 2026.07.23</div>
+  </div>
+
+  <div class="search-wrap">
+    <div class="search-row">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="searchInput" placeholder="输入艺人名，查看WIS合作评估…" onkeydown="if(event.key==='Enter') doSearch(this.value)">
+      <button class="ask-btn" onclick="askAI()">🤖 AI全网搜</button>
+    </div>
+    <div class="search-history" id="searchHistory"></div>
+  </div>
+
+  <div class="status-bar" id="statusBar">⏳ 正在请AI检索微博/抖音/小红书…结果出来后我会直接回复你，同时更新页面</div>
+
+  <div class="search-result" id="searchResult"></div>
+
+  <div class="section-title"><span class="dot"></span>本周热点概览</div>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab(this,'weibo')">微博文娱</button>
+    <button class="tab-btn" onclick="switchTab(this,'douyin')">抖音热榜</button>
+    <button class="tab-btn" onclick="switchTab(this,'xhs')">小红书</button>
+  </div>
+  <div id="tab-weibo" class="hot-list"></div>
+  <div id="tab-douyin" class="hot-list" style="display:none"></div>
+  <div id="tab-xhs" class="hot-list" style="display:none"></div>
+
+  <div class="section-title" style="margin-top:36px"><span class="dot"></span>本周推荐艺人</div>
+  <div id="recommendList"></div>
+
+  <div class="section-title" style="margin-top:36px"><span class="dot"></span>不推荐 / 暂不建议</div>
+  <div class="no-list" id="noList"></div>
+
+  <div class="footer">WIS 明星合作推荐系统 · 市场拓展部明星中心</div>
+</div>
+
+<script>
+var hotData = {
+  weibo: [
+    { r:1, text:"谁敢认这是娜扎", heat:"239.9万", note:"❌ 流量艺人" },
+    { r:2, text:"爱情公寓的结局在这一刻释怀了", heat:"95.7万", note:"🔍 关注演员" },
+    { r:3, text:"昭阳公主开播", heat:"82.4万", note:"🆕 关注配角" },
+    { r:4, text:"董璇张维伊当着小酒窝的面亲亲", heat:"40.0万", note:"✅ 推荐合作" },
+    { r:5, text:"王楚然美得像游戏CG", heat:"36.0万", note:"⏳ 等9月档期" },
+    { r:6, text:"陈妍希姐姐追星张凌赫", heat:"31.1万", note:"✅ 推荐关注" },
+    { r:7, text:"这一秒过火直播/追剧团", heat:"持续热度", note:"🔍 关注配角" }
+  ],
+  douyin: [
+    { r:1, text:"今日大暑", heat:"1089.6万" },
+    { r:2, text:"乒超联赛新规引争议", heat:"914.0万" },
+    { r:3, text:"周星驰手写2000张亲签", heat:"766.9万" },
+    { r:4, text:"JENNIE预告新歌MV", heat:"766.1万", note:"❌ 价格过高" },
+    { r:5, text:"严浩翔红发撕漫男", heat:"769.5万", note:"❌ 流量艺人" }
+  ],
+  xhs: [
+    { r:1, text:"2026上半年综艺播放霸屏榜", heat:"340" },
+    { r:2, text:"《亲爱的客栈2026》海边慢综", heat:"225" },
+    { r:3, text:"陈赫草莓都没刘宇宁甜", heat:"4656" },
+    { r:4, text:"《开始推理吧4》开播", heat:"33" },
+    { r:5, text:"7.21娱乐资讯", heat:"368" }
+  ]
+};
+
+var localDB = {
+  "董璇": { age:"44岁", hit:"微博热搜40万", match:"✅ 推荐合作", detail:"已有合作历史（ROI 2.09），单人预估40-50w。适合水润面膜/眼膜/凝颜套装。" },
+  "陈妍希": { age:"43岁", hit:"微博热搜31.1万", match:"✅ 推荐合作", detail:"国民度高，《那些年》覆盖30-50岁。星图报价40w，建议翻包模式，需询价。" },
+  "王楚然": { age:"27岁", hit:"这一秒过火在播", match:"⏳ 等9月档期", detail:"55w含税，需等到9月凑齐3个品拍。KONO有意向。" },
+  "秦海璐": { age:"47岁", hit:"核心资产", match:"✅ 续约放大", detail:"续约35w/4个月成交594w，总ROI 1.70。无授权复用ROI达2.28。" },
+  "林心如": { age:"50岁", hit:"双品牌标杆", match:"✅ 深挖权益", detail:"53w成交572w，ROI 1.68。翻包模式可复制。" },
+  "温峥嵘": { age:"47岁", hit:"新晋核心资产", match:"✅ 持续放量", detail:"45w成交293w，总ROI 1.75最高。持续放大中。" },
+  "王琳": { age:"55岁", hit:"高性价比", match:"✅ 持续关注", detail:"26.5w成交100w，ROI 1.31。合作费最低百万成交。" },
+  "吴昕": { age:"42岁", hit:"主持人型验证", match:"✅ 保障型素材", detail:"首次55w成交210w，口条好适合混剪。" },
+  "王鸥": { age:"38岁", hit:"ID模式高ROI", match:"✅ ID轻模式", detail:"ID模式1-2w成交163w，ROI 1.89。" },
+  "于明加": { age:"42岁", hit:"进播型素材", match:"✅ 稳健型", detail:"续约40w成交78w，进播型稳定素材。" },
+  "刘晓庆": { age:"70岁", hit:"效果一般", match:"⚠️ 观望", detail:"15w成交34w，ROI 1.00。效果暂未成型。" },
+  "梅婷": { age:"50岁", hit:"KONO核心资产", match:"✅ KONO可用", detail:"KONO占比74.5%。" },
+  "张翰": { age:"41岁", hit:"赫系验证", match:"✅ 赫系可用", detail:"131.5w成交ROI 2.03。" },
+  "王艳": { age:"46岁", hit:"可麦33w成交", match:"✅ 可麦已验证", detail:"原报价43w成交33w，1支种草+抖音视频号二传3个月。" },
+  "海清": { age:"49岁", hit:"WIS已验证", match:"✅ 适合WIS", detail:"55w/3个月全平台授权。可在艺人信息表中查建联情况。" },
+  "江疏影": { age:"40岁", hit:"WIS报价中", match:"✅ 适合关注", detail:"50w含妆造+1min种草+3个月信息流授权。" },
+  "姜妍": { age:"42岁", hit:"新电影上过", match:"✅ 适合关注", detail:"75-80w（新电影刚上过）。" },
+  "辣木洋子": { age:"40岁", hit:"有报价记录", match:"✅ 适合评估", detail:"55-60w不发布。" },
+  "辰亦儒": { age:"45岁", hit:"已验证", match:"✅ 适合WIS", detail:"32w种草发布+抖音信息流3个月。" },
+  "杨雪": { age:"46岁", hit:"AI授权", match:"✅ AI模式", detail:"10w/3个月AI授权，适合低成本测试。" },
+  "黄宥明": { age:"40岁", hit:"AI授权", match:"✅ AI模式", detail:"6w/3个月AI授权。" },
+  "刘维": { age:"40岁", hit:"AI授权", match:"✅ AI模式", detail:"6w/3个月AI授权。" }
+};
+
+var pendingQuery = null;
+
+function renderHot(tid, d) {
+  var el = document.getElementById('tab-' + tid);
+  if (!el) return;
+  el.innerHTML = d.map(function(x) {
+    var c = x.r <= 3 ? 'r' + x.r : 'rn';
+    var n = x.note ? '<span style="margin-left:6px;font-size:11px;color:#888">' + x.note + '</span>' : '';
+    return '<div class="hot-item"><div class="rank ' + c + '">' + x.r + '</div><div class="text">' + x.text + n + '</div><div class="heat">' + x.heat + '</div></div>';
+  }).join('');
+}
+
+function switchTab(btn, t) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  btn.classList.add('active');
+  document.querySelectorAll('[id^="tab-"]').forEach(function(e) { e.style.display = 'none'; });
+  var el = document.getElementById('tab-' + t);
+  if (el) el.style.display = 'flex';
+}
+
+function renderRecommend() {
+  var d = [
+    { n:"董璇", s:4, a:"董", tg:[{t:"已有合作基础",c:"info"},{t:"ROI 2.09",c:""}], i:{h:"微博热搜40万 · 家庭话题",p:"预估40-50w（单人）",a:"44岁",w:"《雪花女神龙》《八大豪族》"}, r:"本周微博热搜40万（家庭话题），精准命中30-50岁精致妈妈人群。已有合作历史（ROI 2.09），建议单人合作，适合水润面膜/眼膜/凝颜套装。" },
+    { n:"陈妍希", s:4, a:"陈", tg:[{t:"新推荐",c:"info"},{t:"国民度高",c:""}], i:{h:"微博31.1万 · 追星话题",p:"预估50-70w（需询价）",a:"43岁",w:"《那些年》《神雕侠侣》"}, r:"43岁，《那些年》覆盖30-50岁人群。星图报价40万，建议翻包模式（参考林心如53w）。" }
+  ];
+  var el = document.getElementById('recommendList');
+  if (!el) return;
+  el.innerHTML = d.map(function(x) {
+    var tg = x.tg.map(function(t) { return '<span class="tag ' + (t.c||'') + '">' + t.t + '</span>'; }).join('');
+    return '<div class="card"><div class="card-header"><div class="card-avatar">' + x.a + '</div><div><div class="card-name">' + x.n + ' <span class="card-stars">' + '⭐'.repeat(x.s) + '</span></div><div class="card-tags">' + tg + '</div></div></div><div class="card-body"><div class="row"><span class="label">热度</span><span>' + x.i.h + '</span></div><div class="row"><span class="label">报价</span><span>' + x.i.p + '</span></div><div class="row"><span class="label">年龄</span><span>' + x.i.a + '</span></div><div class="row"><span class="label">代表作</span><span>' + x.i.w + '</span></div><div class="reason">' + x.r + '</div></div></div>';
+  }).join('');
+}
+
+function renderNoList() {
+  var el = document.getElementById('noList');
+  if (!el) return;
+  var d = ["娜扎 — 年轻流量报价过高","韩安冉 — 网红舆情风险","丁程鑫 — 年轻流量","严浩翔 — 年轻流量","JENNIE — 价格过高"];
+  el.innerHTML = d.map(function(n) { return '<div class="no-item">❌ ' + n + '</div>'; }).join('');
+}
+
+function loadHistory() {
+  try {
+    var h = JSON.parse(localStorage.getItem('wis_search_history') || '[]');
+    var c = document.getElementById('searchHistory');
+    if (h.length === 0) { c.style.display = 'none'; return; }
+    c.style.display = 'block';
+    c.innerHTML = '<div class="h-title">最近搜索</div><div class="h-tags">' + h.map(function(n) {
+      return '<span class="history-tag" onclick="document.getElementById(\'searchInput\').value=\'' + n + '\';doSearch(\'' + n + '\')">' + n + '<span class="close" onclick="event.stopPropagation();removeHistory(\'' + n + '\')"> ✕</span></span>';
+    }).join('') + '</div>';
+  } catch(e) {}
+}
+
+function addHistory(n) {
+  try {
+    var h = JSON.parse(localStorage.getItem('wis_search_history') || '[]');
+    h = h.filter(function(x) { return x !== n; });
+    h.unshift(n);
+    if (h.length > 10) h = h.slice(0, 10);
+    localStorage.setItem('wis_search_history', JSON.stringify(h));
+    loadHistory();
+  } catch(e) {}
+}
+
+function removeHistory(n) {
+  try {
+    var h = JSON.parse(localStorage.getItem('wis_search_history') || '[]');
+    h = h.filter(function(x) { return x !== n; });
+    localStorage.setItem('wis_search_history', JSON.stringify(h));
+    loadHistory();
+  } catch(e) {}
+}
+
+function doSearch(val) {
+  if (!val.trim()) { closeResult(); return; }
+  var key = val.trim();
+  addHistory(key);
+  var data = localDB[key];
+  var el = document.getElementById('searchResult');
+  if (data) {
+    var mc = data.match.indexOf('✅') > -1 ? 'tag' : (data.match.indexOf('⏳') > -1 || data.match.indexOf('⚠️') > -1 ? 'tag warn' : 'tag bad');
+    el.innerHTML = '<div class="card"><div class="card-header"><div class="card-avatar">' + key[0] + '</div><div><div class="card-name">' + key + '</div><div class="card-tags"><span class="' + mc + '">' + data.match + '</span></div></div></div><div class="card-body"><div class="row"><span class="label">年龄</span><span>' + data.age + '</span></div><div class="row"><span class="label">近期动态</span><span>' + data.hit + '</span></div><div class="reason">' + data.detail + '</div></div></div>';
+    el.classList.add('show');
+  } else {
+    el.innerHTML = '<div class="no-result"><div class="big-icon">🔍</div><div>暂未收录「' + key + '」</div><div style="font-size:12px;color:#bbb;margin:8px 0">点击「AI全网搜」，我马上去微博/抖音/小红书查</div></div>';
+    el.classList.add('show');
+  }
+}
+
+function closeResult() {
+  document.getElementById('searchResult').classList.remove('show');
+}
+
+function askAI() {
+  var input = document.getElementById('searchInput');
+  var k = input.value.trim();
+  if (!k) { input.focus(); return; }
+  pendingQuery = k;
+  document.getElementById('statusBar').style.display = 'block';
+  document.getElementById('searchResult').classList.remove('show');
+}
+
+renderHot('weibo', hotData.weibo);
+renderHot('douyin', hotData.douyin);
+renderHot('xhs', hotData.xhs);
+renderRecommend();
+renderNoList();
+loadHistory();
+</script>
+</body>
+</html>
